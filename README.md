@@ -1,3 +1,11 @@
+This is a fork of https://github.com/fbsder/canfestival
+
+Current additions are a VC14 solution that only targets the drivers and the vc10 project files for the drivers are upgraded to vc14
+
+No other changes are made to the stack 
+
+-------------------------------------
+
 This is a fork of the CanFestival-3 project http://dev.automforge.net/CanFestival-3
 
 Latest work done:

@@ -83,9 +83,49 @@ can_LAWICEL_win32::can_LAWICEL_win32(s_BOARD *board) : m_port(INVALID_HANDLE_VAL
 
    doTX("C\r");
 
+   if (!strcmp(board->baudrate, "10K"))
+   {
+	   doTX("S0\r");
+   }
+
+   if (!strcmp(board->baudrate, "20K"))
+   {
+	   doTX("S1\r");
+   }
+
+   if (!strcmp(board->baudrate, "50K"))
+   {
+	   doTX("S2\r");
+   }
+
+   if (!strcmp(board->baudrate, "100K"))
+   {
+	   doTX("S3\r");
+   }
+
+   if (!strcmp(board->baudrate, "125K"))
+   {
+	   doTX("S4\r");
+   }
+
+   if (!strcmp(board->baudrate, "250K"))
+   {
+	   doTX("S5\r");
+   }
+
    if (!strcmp(board->baudrate, "500K"))
    {
 	   doTX("S6\r");
+   }
+
+   if (!strcmp(board->baudrate, "800K"))
+   {
+	   doTX("S7\r");
+   }
+
+   if (!strcmp(board->baudrate, "1M"))
+   {
+	   doTX("S8\r");
    }
 
    doTX("O\r");

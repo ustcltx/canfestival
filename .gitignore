@@ -6,8 +6,8 @@
 /bin/Release
 /obj/*
 .vs/*
-Release/*
-Debug/*
+Release/
+Debug/
 */Release/
 */Debug/
 *.db

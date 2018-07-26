@@ -92,76 +92,75 @@ bool can_qm_rs232_win32::send(const Message *m)
    enum { WRITE_TIMEOUT = 1000 };
    ::WaitForSingleObject(overlapped.hEvent, WRITE_TIMEOUT);
    //// get number of bytes written
-   //::GetOverlappedResult(m_port, &overlapped, &bytes_written, FALSE);
-
-   return true;
+   ::GetOverlappedResult(m_port, &overlapped, &bytes_written, FALSE);
 
    //if(bytes_written == 0)
    //{
 	  // return false;
    //}
 
-   //bool result = (bytes_written == (unsigned long)QM_CAN.len);
+   bool result = (bytes_written == (unsigned long)QM_CAN.len);
 
-   //return result;
+   return result;
    }
 
 
 bool can_qm_rs232_win32::receive(Message *m)
-   {
-   if (m_port == INVALID_HANDLE_VALUE)
-      return false;
+{
+	if (m_port == INVALID_HANDLE_VALUE)
+		return false;
 
-   long res_buffer_size = (long)m_residual_buffer.size();
-   bool result = get_can_data(m_residual_buffer, res_buffer_size, m);
-   if (result)
-      {
-      m_residual_buffer.erase(0, res_buffer_size);
-      return true;
-      }
+	long res_buffer_size = (long)m_residual_buffer.size();
 
-   enum { READ_TIMEOUT = 500 };
+	bool result = get_can_data(m_residual_buffer, res_buffer_size, m);
+	if (result)
+	{
+		m_residual_buffer.erase(0, res_buffer_size);
+		return true;
+	}
 
-   OVERLAPPED overlapped;
-   ::memset(&overlapped, 0, sizeof overlapped);
-   overlapped.hEvent = m_read_event;
-   ::ResetEvent(overlapped.hEvent);
-   unsigned long event_mask = 0;
+	enum { READ_TIMEOUT = 500 };
 
-   if (FALSE == ::WaitCommEvent(m_port, &event_mask, &overlapped) && ERROR_IO_PENDING == ::GetLastError())
-      {
-      if (WAIT_TIMEOUT == ::WaitForSingleObject(overlapped.hEvent, READ_TIMEOUT))
-         return false;
-      }
+	OVERLAPPED overlapped;
+	::memset(&overlapped, 0, sizeof overlapped);
+	overlapped.hEvent = m_read_event;
+	::ResetEvent(overlapped.hEvent);
+	unsigned long event_mask = 0;
 
-   // get number of bytes in the input que
-   COMSTAT stat;
-   ::memset(&stat, 0, sizeof stat);
-   unsigned long errors = 0;
-   ::ClearCommError(m_port, &errors, &stat);
-   if (stat.cbInQue == 0)
-      return false;
-   char buffer[3000];
+	if (FALSE == ::WaitCommEvent(m_port, &event_mask, &overlapped) && ERROR_IO_PENDING == ::GetLastError())
+	{
+		if (WAIT_TIMEOUT == ::WaitForSingleObject(overlapped.hEvent, READ_TIMEOUT))
+			return false;
+	}
 
-   unsigned long bytes_to_read = min(stat.cbInQue, sizeof (buffer));
+	// get number of bytes in the input que
+	COMSTAT stat;
+	::memset(&stat, 0, sizeof stat);
+	unsigned long errors = 0;
+	::ClearCommError(m_port, &errors, &stat);
+	if (stat.cbInQue == 0)
+		return false;
+	char buffer[3000];
 
-   unsigned long bytes_read = 0;
-   ::ReadFile(m_port, buffer, bytes_to_read, &bytes_read, &overlapped);
-   // wait for read operation completion
-   ::WaitForSingleObject(overlapped.hEvent, READ_TIMEOUT);
-   // get number of bytes read
-   ::GetOverlappedResult(m_port, &overlapped, &bytes_read, FALSE);
-   result = false;
-   if (bytes_read > 0)
-      {
-      m_residual_buffer.append(buffer, bytes_read);
-      res_buffer_size = (long)m_residual_buffer.size();
-      result = get_can_data(m_residual_buffer, res_buffer_size, m);
-      if (result)
-         m_residual_buffer.erase(0, res_buffer_size);
-      }
-   return result;
-   }
+	unsigned long bytes_to_read = min(stat.cbInQue, sizeof(buffer));
+
+	unsigned long bytes_read = 0;
+	::ReadFile(m_port, buffer, bytes_to_read, &bytes_read, &overlapped);
+	// wait for read operation completion
+	::WaitForSingleObject(overlapped.hEvent, READ_TIMEOUT);
+	// get number of bytes read
+	::GetOverlappedResult(m_port, &overlapped, &bytes_read, FALSE);
+	result = false;
+	if (bytes_read > 0)
+	{
+		m_residual_buffer.append(buffer, bytes_read);
+		res_buffer_size = (long)m_residual_buffer.size();
+		result = get_can_data(m_residual_buffer, res_buffer_size, m);
+		if (result)
+			m_residual_buffer.erase(0, res_buffer_size);
+	}
+	return result;
+}
 
 bool can_qm_rs232_win32::open_rs232(int port, int baud_rate)
    {
@@ -246,12 +245,6 @@ bool can_qm_rs232_win32::get_can_data(std::string can_cmd_buf, long& bufsize, Me
 	char command_head = 0;
 	command_head = can_cmd_buf[0];
 
-	if ((command_head != (char)0xE1 && command_head != (char)0xD3))
-	{
-		bufsize = 0;
-		return false;
-	}
-
 	if (command_head == (char)0xE1)
 	{
 		if (bufsize == 3 || (can_cmd_buf[1] > bufsize - 4))
@@ -269,10 +262,13 @@ bool can_qm_rs232_win32::get_can_data(std::string can_cmd_buf, long& bufsize, Me
 				msg.data[i] = can_cmd_buf[4 + i];
 			}
 		}
+
+		bufsize = msg.len + 4;
 	}
 	else if (command_head == (char)0xD3) {
 		msg.rtr = 1;
 		msg.cob_id = (((can_cmd_buf[1] & 0x00FF) << 8) + can_cmd_buf[2]);
+		bufsize = 3;
 	}
 
 	*m = msg;
